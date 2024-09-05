@@ -332,7 +332,9 @@ class MainPipe(implicit p: Parameters) extends L2Module {
     state = Mux(req_needT_s3 || sink_resp_s3_a_promoteT, TRUNK, meta_s3.state),
     clients = Fill(clientBits, true.B),
     alias = Some(metaW_s3_a_alias),
-    accessed = true.B
+    accessed = true.B,
+    prefetch = meta_s3.prefetch.getOrElse(false.B),
+    pfsrc = meta_s3.prefetchSrc.getOrElse(PfSource.NoWhere.id.U)
   )
   val metaW_s3_b = Mux(req_s3.param === toN, MetaEntry(),
     MetaEntry(
@@ -340,7 +342,9 @@ class MainPipe(implicit p: Parameters) extends L2Module {
       state = BRANCH,
       clients = meta_s3.clients,
       alias = meta_s3.alias,
-      accessed = meta_s3.accessed
+      accessed = meta_s3.accessed,
+      prefetch = meta_s3.prefetch.getOrElse(false.B),
+      pfsrc = meta_s3.prefetchSrc.getOrElse(PfSource.NoWhere.id.U)
     )
   )
 
@@ -349,7 +353,9 @@ class MainPipe(implicit p: Parameters) extends L2Module {
     state = Mux(isParamFromT(req_s3.param), TIP, meta_s3.state),
     clients = Fill(clientBits, !isToN(req_s3.param)),
     alias = meta_s3.alias,
-    accessed = meta_s3.accessed
+    accessed = meta_s3.accessed,
+    prefetch = meta_s3.prefetch.getOrElse(false.B),
+    pfsrc = meta_s3.prefetchSrc.getOrElse(PfSource.NoWhere.id.U)
   )
   // use merge_meta if mergeA
   val metaW_s3_mshr = Mux(req_s3.mergeA, req_s3.aMergeTask.meta, req_s3.meta)
@@ -414,7 +420,7 @@ class MainPipe(implicit p: Parameters) extends L2Module {
       // train on request(with needHint flag) miss or hit on prefetched block
       // trigger train also in a_merge here
       train.valid := task_s3.valid && (((req_acquire_s3 || req_get_s3) && req_s3.needHint.getOrElse(false.B) &&
-        (!dirResult_s3.hit || meta_s3.prefetch.get)) || req_s3.mergeA)
+        (!dirResult_s3.hit || meta_s3.prefetch.get && !meta_s3.accessed)) || req_s3.mergeA)
       train.bits.tag := req_s3.tag
       train.bits.set := req_s3.set
       train.bits.needT := Mux(req_s3.mergeA, needT(req_s3.aMergeTask.opcode, req_s3.aMergeTask.param),req_needT_s3)

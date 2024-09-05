@@ -139,29 +139,57 @@ class TopDownMonitor()(implicit p: Parameters) extends L2Module {
   )
 
   val l2prefetchUseful = dirResultMatchVec(
-    r => reqFromCPU(r) && r.hit && r.meta.prefetch.getOrElse(false.B)
+    r => reqFromCPU(r) && r.hit && !r.meta.accessed && r.meta.prefetch.getOrElse(false.B)
   )
   val l2prefetchUsefulBOP = dirResultMatchVec(
-    r => reqFromCPU(r) && r.hit &&
+    r => reqFromCPU(r) && r.hit && !r.meta.accessed &&
       r.meta.prefetch.getOrElse(false.B) && r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.BOP.id.U
   )
   val l2prefetchUsefulPBOP = dirResultMatchVec(
-    r => reqFromCPU(r) && r.hit &&
+    r => reqFromCPU(r) && r.hit && !r.meta.accessed &&
       r.meta.prefetch.getOrElse(false.B) && r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.PBOP.id.U
   )
   val l2prefetchUsefulSMS = dirResultMatchVec(
-    r => reqFromCPU(r) && r.hit &&
+    r => reqFromCPU(r) && r.hit && !r.meta.accessed &&
       r.meta.prefetch.getOrElse(false.B) && r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.SMS.id.U
   )
   val l2prefetchUsefulStride = dirResultMatchVec(
-    r => reqFromCPU(r) && r.hit &&
+    r => reqFromCPU(r) && r.hit && !r.meta.accessed &&
       r.meta.prefetch.getOrElse(false.B) && r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.Stride.id.U
   )
   val l2prefetchUsefulStream = dirResultMatchVec(
-    r => reqFromCPU(r) && r.hit &&
+    r => reqFromCPU(r) && r.hit && !r.meta.accessed &&
       r.meta.prefetch.getOrElse(false.B) && r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.Stream.id.U
   )
   val l2prefetchUsefulTP = dirResultMatchVec(
+    r => reqFromCPU(r) && r.hit && !r.meta.accessed &&
+      r.meta.prefetch.getOrElse(false.B) && r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.TP.id.U
+  )
+
+  val l2prefetchReuseCount = dirResultMatchVec(
+    r => reqFromCPU(r) && r.hit && r.meta.prefetch.getOrElse(false.B)
+  )
+  val l2prefetchReuseCountBOP = dirResultMatchVec(
+    r => reqFromCPU(r) && r.hit &&
+      r.meta.prefetch.getOrElse(false.B) && r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.BOP.id.U
+  )
+  val l2prefetchReuseCountPBOP = dirResultMatchVec(
+    r => reqFromCPU(r) && r.hit &&
+      r.meta.prefetch.getOrElse(false.B) && r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.PBOP.id.U
+  )
+  val l2prefetchReuseCountSMS = dirResultMatchVec(
+    r => reqFromCPU(r) && r.hit &&
+      r.meta.prefetch.getOrElse(false.B) && r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.SMS.id.U
+  )
+  val l2prefetchReuseCountStride = dirResultMatchVec(
+    r => reqFromCPU(r) && r.hit &&
+      r.meta.prefetch.getOrElse(false.B) && r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.Stride.id.U
+  )
+  val l2prefetchReuseCountStream = dirResultMatchVec(
+    r => reqFromCPU(r) && r.hit &&
+      r.meta.prefetch.getOrElse(false.B) && r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.Stream.id.U
+  )
+  val l2prefetchReuseCountTP = dirResultMatchVec(
     r => reqFromCPU(r) && r.hit &&
       r.meta.prefetch.getOrElse(false.B) && r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.TP.id.U
   )
@@ -207,11 +235,6 @@ class TopDownMonitor()(implicit p: Parameters) extends L2Module {
     PopCount(l2prefetchUsefulStream), PopCount(l2prefetchSentStream),
     1000, io.debugTopDown.robTrueCommit, clock, reset
   )
-  XSPerfRolling(
-    "L2PrefetchAccuracyTP",
-    PopCount(l2prefetchUsefulTP), PopCount(l2prefetchSentTP),
-    1000, io.debugTopDown.robTrueCommit, clock, reset
-  )
 
   // PF Late
   XSPerfRolling(
@@ -223,42 +246,37 @@ class TopDownMonitor()(implicit p: Parameters) extends L2Module {
   // PF Coverage
   XSPerfRolling(
     "L2PrefetchCoverage",
-    PopCount(l2prefetchUseful), PopCount(l2demandRequest),
+    PopCount(l2prefetchReuseCount), PopCount(l2demandRequest),
     1000, io.debugTopDown.robTrueCommit, clock, reset
   )
   XSPerfRolling(
     "L2PrefetchCoverageBOP",
-    PopCount(l2prefetchUsefulBOP), PopCount(l2demandRequest),
+    PopCount(l2prefetchReuseCountBOP), PopCount(l2demandRequest),
     1000, io.debugTopDown.robTrueCommit, clock, reset
   )
   XSPerfRolling(
     "L2PrefetchCoveragePBOP",
-    PopCount(l2prefetchUsefulPBOP), PopCount(l2demandRequest),
+    PopCount(l2prefetchReuseCountPBOP), PopCount(l2demandRequest),
     1000, io.debugTopDown.robTrueCommit, clock, reset
   )
   XSPerfRolling(
     "L2PrefetchCoverageSMS",
-    PopCount(l2prefetchUsefulSMS), PopCount(l2demandRequest),
+    PopCount(l2prefetchReuseCountSMS), PopCount(l2demandRequest),
     1000, io.debugTopDown.robTrueCommit, clock, reset
   )
   XSPerfRolling(
     "L2PrefetchCoverageTP",
-    PopCount(l2prefetchUsefulTP), PopCount(l2demandRequest),
+    PopCount(l2prefetchReuseCountTP), PopCount(l2demandRequest),
     1000, io.debugTopDown.robTrueCommit, clock, reset
   )
   XSPerfRolling(
     "L2PrefetchCoverageStride",
-    PopCount(l2prefetchUsefulStride), PopCount(l2demandRequest),
+    PopCount(l2prefetchReuseCountStride), PopCount(l2demandRequest),
     1000, io.debugTopDown.robTrueCommit, clock, reset
   )
   XSPerfRolling(
     "L2PrefetchCoverageStream",
-    PopCount(l2prefetchUsefulStream), PopCount(l2demandRequest),
-    1000, io.debugTopDown.robTrueCommit, clock, reset
-  )
-  XSPerfRolling(
-    "L2PrefetchCoverageTP",
-    PopCount(l2prefetchUsefulTP), PopCount(l2demandRequest),
+    PopCount(l2prefetchReuseCountStream), PopCount(l2demandRequest),
     1000, io.debugTopDown.robTrueCommit, clock, reset
   )
 

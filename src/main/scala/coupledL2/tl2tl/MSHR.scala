@@ -388,7 +388,8 @@ class MSHR(implicit p: Parameters) extends L2Module {
       ),
       clients = Fill(clientBits, true.B),
       alias = Some(merge_task.alias.getOrElse(0.U)),
-      prefetch = false.B,
+      prefetch = req_prefetch || dirResult.hit && meta_pft,
+      pfsrc = PfSource.fromMemReqSource(req.reqSource),
       accessed = true.B
     )
     mp_grant.txChannel := 0.U
