@@ -39,8 +39,10 @@ abstract class PrefetchModule(implicit val p: Parameters) extends Module with Ha
 object PfSource extends Enumeration {
   val NoWhere = Value("NoWhere")
   val SMS     = Value("SMS")
-  val BOP     = Value("BOP")
-  val PBOP     = Value("PBOP")
+  val VBOP    = Value("VBOP")
+  val PBOP    = Value("PBOP")
+  val SLP     = Value("SLP")
+  val TLP     = Value("TLP")
   val Stream  = Value("Stream")
   val Stride  = Value("Stride")
   val TP      = Value("TP")
@@ -51,8 +53,10 @@ object PfSource extends Enumeration {
   def fromMemReqSource(s: UInt): UInt = {
     val pfsrc = WireInit(NoWhere.id.U.asTypeOf(UInt(pfSourceBits.W)))
     switch(s) {
-      is (MemReqSource.Prefetch2L2BOP.id.U) { pfsrc := BOP.id.U }
+      is (MemReqSource.Prefetch2L2VBOP.id.U) { pfsrc := VBOP.id.U }
       is (MemReqSource.Prefetch2L2PBOP.id.U) { pfsrc := PBOP.id.U }
+      is (MemReqSource.Prefetch2L2SLP.id.U) { pfsrc := SLP.id.U }
+      is (MemReqSource.Prefetch2L2TLP.id.U) { pfsrc := TLP.id.U }
       is (MemReqSource.Prefetch2L2SMS.id.U) { pfsrc := SMS.id.U }
       is (MemReqSource.Prefetch2L2TP.id.U)  { pfsrc := TP.id.U  }
       is (MemReqSource.Prefetch2L2Stream.id.U) { pfsrc := Stream.id.U }

@@ -112,18 +112,38 @@ class TopDownMonitor()(implicit p: Parameters) extends L2Module {
   // prefetch accuracy calculation
   val l2prefetchSent = dirResultMatchVec(
     r =>  !r.hit &&
-      (r.replacerInfo.reqSource === MemReqSource.Prefetch2L2BOP.id.U ||
+      (r.replacerInfo.reqSource === MemReqSource.Prefetch2L2VBOP.id.U ||
        r.replacerInfo.reqSource === MemReqSource.Prefetch2L2PBOP.id.U ||
+       r.replacerInfo.reqSource === MemReqSource.Prefetch2L2SLP.id.U ||
+       r.replacerInfo.reqSource === MemReqSource.Prefetch2L2TLP.id.U ||
        r.replacerInfo.reqSource === MemReqSource.Prefetch2L2SMS.id.U ||
        r.replacerInfo.reqSource === MemReqSource.Prefetch2L2Stride.id.U ||
        r.replacerInfo.reqSource === MemReqSource.Prefetch2L2Stream.id.U ||
        r.replacerInfo.reqSource === MemReqSource.Prefetch2L2TP.id.U)
   )
-  val l2prefetchSentBOP = dirResultMatchVec(
-    r => !r.hit && r.replacerInfo.reqSource === MemReqSource.Prefetch2L2BOP.id.U
+  val l2prefetchSentVBOP = dirResultMatchVec(
+    r => !r.hit && r.replacerInfo.reqSource === MemReqSource.Prefetch2L2VBOP.id.U
   )
   val l2prefetchSentPBOP = dirResultMatchVec(
     r => !r.hit && r.replacerInfo.reqSource === MemReqSource.Prefetch2L2PBOP.id.U
+  )
+  val l2prefetchSentBOP = dirResultMatchVec(
+    r => !r.hit && (
+      r.replacerInfo.reqSource === MemReqSource.Prefetch2L2VBOP.id.U ||
+      r.replacerInfo.reqSource === MemReqSource.Prefetch2L2PBOP.id.U
+    )
+  )
+  val l2prefetchSentSLP = dirResultMatchVec(
+    r => !r.hit && r.replacerInfo.reqSource === MemReqSource.Prefetch2L2SLP.id.U
+  )
+  val l2prefetchSentTLP = dirResultMatchVec(
+    r => !r.hit && r.replacerInfo.reqSource === MemReqSource.Prefetch2L2TLP.id.U
+  )
+  val l2prefetchSentHHP = dirResultMatchVec(
+    r => !r.hit && (
+      r.replacerInfo.reqSource === MemReqSource.Prefetch2L2TLP.id.U ||
+      r.replacerInfo.reqSource === MemReqSource.Prefetch2L2SLP.id.U
+    )
   )
   val l2prefetchSentSMS = dirResultMatchVec(
     r => !r.hit && r.replacerInfo.reqSource === MemReqSource.Prefetch2L2SMS.id.U
@@ -141,14 +161,35 @@ class TopDownMonitor()(implicit p: Parameters) extends L2Module {
   val l2prefetchUseful = dirResultMatchVec(
     r => reqFromCPU(r) && r.hit && !r.meta.accessed && r.meta.prefetch.getOrElse(false.B)
   )
-  val l2prefetchUsefulBOP = dirResultMatchVec(
+  val l2prefetchUsefulVBOP = dirResultMatchVec(
     r => reqFromCPU(r) && r.hit && !r.meta.accessed &&
-      r.meta.prefetch.getOrElse(false.B) && r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.BOP.id.U
+      r.meta.prefetch.getOrElse(false.B) && r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.VBOP.id.U
   )
   val l2prefetchUsefulPBOP = dirResultMatchVec(
     r => reqFromCPU(r) && r.hit && !r.meta.accessed &&
       r.meta.prefetch.getOrElse(false.B) && r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.PBOP.id.U
   )
+  val l2prefetchUsefulBOP = dirResultMatchVec(
+    r => reqFromCPU(r) && r.hit && !r.meta.accessed &&
+      r.meta.prefetch.getOrElse(false.B) && (
+        r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.VBOP.id.U ||
+        r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.PBOP.id.U
+      )
+  )
+  val l2prefetchUsefulSLP = dirResultMatchVec(
+    r => reqFromCPU(r) && r.hit && !r.meta.accessed &&
+      r.meta.prefetch.getOrElse(false.B) && r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.SLP.id.U
+  )
+  val l2prefetchUsefulTLP = dirResultMatchVec(
+    r => reqFromCPU(r) && r.hit && !r.meta.accessed &&
+      r.meta.prefetch.getOrElse(false.B) && r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.TLP.id.U
+  )
+  val l2prefetchUsefulHHP = dirResultMatchVec(
+    r => reqFromCPU(r) && r.hit && !r.meta.accessed &&
+      r.meta.prefetch.getOrElse(false.B) && (
+        r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.TLP.id.U ||
+        r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.SLP.id.U
+  ))
   val l2prefetchUsefulSMS = dirResultMatchVec(
     r => reqFromCPU(r) && r.hit && !r.meta.accessed &&
       r.meta.prefetch.getOrElse(false.B) && r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.SMS.id.U
@@ -169,13 +210,35 @@ class TopDownMonitor()(implicit p: Parameters) extends L2Module {
   val l2prefetchReuseCount = dirResultMatchVec(
     r => reqFromCPU(r) && r.hit && r.meta.prefetch.getOrElse(false.B)
   )
-  val l2prefetchReuseCountBOP = dirResultMatchVec(
+  val l2prefetchReuseCountVBOP = dirResultMatchVec(
     r => reqFromCPU(r) && r.hit &&
-      r.meta.prefetch.getOrElse(false.B) && r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.BOP.id.U
+      r.meta.prefetch.getOrElse(false.B) && r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.VBOP.id.U
   )
   val l2prefetchReuseCountPBOP = dirResultMatchVec(
     r => reqFromCPU(r) && r.hit &&
       r.meta.prefetch.getOrElse(false.B) && r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.PBOP.id.U
+  )
+  val l2prefetchReuseCountBOP = dirResultMatchVec(
+    r => reqFromCPU(r) && r.hit &&
+      r.meta.prefetch.getOrElse(false.B) && (
+        r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.VBOP.id.U ||
+        r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.PBOP.id.U
+      )
+  )
+  val l2prefetchReuseCountSLP = dirResultMatchVec(
+    r => reqFromCPU(r) && r.hit &&
+      r.meta.prefetch.getOrElse(false.B) && r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.SLP.id.U
+  )
+  val l2prefetchReuseCountTLP = dirResultMatchVec(
+    r => reqFromCPU(r) && r.hit &&
+      r.meta.prefetch.getOrElse(false.B) && r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.TLP.id.U
+  )
+  val l2prefetchReuseCountHHP = dirResultMatchVec(
+    r => reqFromCPU(r) && r.hit &&
+      r.meta.prefetch.getOrElse(false.B) && (
+        r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.TLP.id.U ||
+        r.meta.prefetchSrc.getOrElse(PfSource.NoWhere.id.U) === PfSource.SLP.id.U
+      )
   )
   val l2prefetchReuseCountSMS = dirResultMatchVec(
     r => reqFromCPU(r) && r.hit &&
@@ -206,13 +269,33 @@ class TopDownMonitor()(implicit p: Parameters) extends L2Module {
     1000, io.debugTopDown.robTrueCommit, clock, reset
   )
   XSPerfRolling(
-    "L2PrefetchAccuracyBOP",
-    PopCount(l2prefetchUsefulBOP), PopCount(l2prefetchSentBOP),
+    "L2PrefetchAccuracyVBOP",
+    PopCount(l2prefetchUsefulVBOP), PopCount(l2prefetchSentVBOP),
     1000, io.debugTopDown.robTrueCommit, clock, reset
   )
   XSPerfRolling(
     "L2PrefetchAccuracyPBOP",
     PopCount(l2prefetchUsefulPBOP), PopCount(l2prefetchSentPBOP),
+    1000, io.debugTopDown.robTrueCommit, clock, reset
+  )
+  XSPerfRolling(
+    "L2PrefetchAccuracyBOP",
+    PopCount(l2prefetchUsefulBOP), PopCount(l2prefetchSentBOP),
+    1000, io.debugTopDown.robTrueCommit, clock, reset
+  ) 
+  XSPerfRolling(
+    "L2PrefetchAccuracySLP",
+    PopCount(l2prefetchUsefulSLP), PopCount(l2prefetchSentSLP),
+    1000, io.debugTopDown.robTrueCommit, clock, reset
+  )
+  XSPerfRolling(
+    "L2PrefetchAccuracyTLP",
+    PopCount(l2prefetchUsefulTLP), PopCount(l2prefetchSentTLP),
+    1000, io.debugTopDown.robTrueCommit, clock, reset
+  )
+  XSPerfRolling(
+    "L2PrefetchAccuracyHHP",
+    PopCount(l2prefetchUsefulHHP), PopCount(l2prefetchSentHHP),
     1000, io.debugTopDown.robTrueCommit, clock, reset
   )
   XSPerfRolling(
@@ -250,13 +333,33 @@ class TopDownMonitor()(implicit p: Parameters) extends L2Module {
     1000, io.debugTopDown.robTrueCommit, clock, reset
   )
   XSPerfRolling(
-    "L2PrefetchCoverageBOP",
-    PopCount(l2prefetchReuseCountBOP), PopCount(l2demandRequest),
+    "L2PrefetchCoverageVBOP",
+    PopCount(l2prefetchReuseCountVBOP), PopCount(l2demandRequest),
     1000, io.debugTopDown.robTrueCommit, clock, reset
   )
   XSPerfRolling(
     "L2PrefetchCoveragePBOP",
     PopCount(l2prefetchReuseCountPBOP), PopCount(l2demandRequest),
+    1000, io.debugTopDown.robTrueCommit, clock, reset
+  )
+  XSPerfRolling(
+    "L2PrefetchCoverageBOP",
+    PopCount(l2prefetchReuseCountBOP), PopCount(l2demandRequest),
+    1000, io.debugTopDown.robTrueCommit, clock, reset
+  )
+  XSPerfRolling(
+    "L2PrefetchCoverageSLP",
+    PopCount(l2prefetchReuseCountSLP), PopCount(l2demandRequest),
+    1000, io.debugTopDown.robTrueCommit, clock, reset
+  )
+  XSPerfRolling(
+    "L2PrefetchCoverageTLP",
+    PopCount(l2prefetchReuseCountTLP), PopCount(l2demandRequest),
+    1000, io.debugTopDown.robTrueCommit, clock, reset
+  )
+  XSPerfRolling(
+    "L2PrefetchCoverageHHP",
+    PopCount(l2prefetchReuseCountHHP), PopCount(l2demandRequest),
     1000, io.debugTopDown.robTrueCommit, clock, reset
   )
   XSPerfRolling(
@@ -281,17 +384,41 @@ class TopDownMonitor()(implicit p: Parameters) extends L2Module {
   )
 
   XSPerfAccumulate("l2prefetchSent", PopCount(l2prefetchSent))
+  XSPerfAccumulate("l2prefetchSentVBOP", PopCount(l2prefetchSentVBOP))
+  XSPerfAccumulate("l2prefetchSentPBOP", PopCount(l2prefetchSentPBOP))
   XSPerfAccumulate("l2prefetchSentBOP", PopCount(l2prefetchSentBOP))
+  XSPerfAccumulate("l2prefetchSentSLP", PopCount(l2prefetchSentSLP))
+  XSPerfAccumulate("l2prefetchSentTLP", PopCount(l2prefetchSentTLP))
+  XSPerfAccumulate("l2prefetchSentHHP", PopCount(l2prefetchSentHHP))
   XSPerfAccumulate("l2prefetchSentSMS", PopCount(l2prefetchSentSMS))
   XSPerfAccumulate("l2prefetchSentStride", PopCount(l2prefetchSentStride))
   XSPerfAccumulate("l2prefetchSentStream", PopCount(l2prefetchSentStream))
   XSPerfAccumulate("l2prefetchSentTP", PopCount(l2prefetchSentTP))
+
   XSPerfAccumulate("l2prefetchUseful", PopCount(l2prefetchUseful))
+  XSPerfAccumulate("l2prefetchUsefulVBOP", PopCount(l2prefetchUsefulVBOP))
+  XSPerfAccumulate("l2prefetchUsefulPBOP", PopCount(l2prefetchUsefulPBOP))
   XSPerfAccumulate("l2prefetchUsefulBOP", PopCount(l2prefetchUsefulBOP))
+  XSPerfAccumulate("l2prefetchUsefulSLP", PopCount(l2prefetchUsefulSLP))
+  XSPerfAccumulate("l2prefetchUsefulTLP", PopCount(l2prefetchUsefulTLP))
+  XSPerfAccumulate("l2prefetchUsefulHHP", PopCount(l2prefetchUsefulHHP))
   XSPerfAccumulate("l2prefetchUsefulSMS", PopCount(l2prefetchUsefulSMS))
   XSPerfAccumulate("l2prefetchUsefulStride", PopCount(l2prefetchUsefulStride))
   XSPerfAccumulate("l2prefetchUsefulStream", PopCount(l2prefetchUsefulStream))
   XSPerfAccumulate("l2prefetchUsefulTP", PopCount(l2prefetchUsefulTP))
+
+  XSPerfAccumulate("l2prefetchReuseCount", PopCount(l2prefetchReuseCount))
+  XSPerfAccumulate("l2prefetchReuseCountVBOP", PopCount(l2prefetchReuseCountVBOP))
+  XSPerfAccumulate("l2prefetchReuseCountPBOP", PopCount(l2prefetchReuseCountPBOP))
+  XSPerfAccumulate("l2prefetchReuseCountBOP", PopCount(l2prefetchReuseCountBOP))
+  XSPerfAccumulate("l2prefetchReuseCountSLP", PopCount(l2prefetchReuseCountSLP))
+  XSPerfAccumulate("l2prefetchReuseCountTLP", PopCount(l2prefetchReuseCountTLP))
+  XSPerfAccumulate("l2prefetchReuseCountHHP", PopCount(l2prefetchReuseCountHHP))
+  XSPerfAccumulate("l2prefetchReuseCountSMS", PopCount(l2prefetchReuseCountSMS))
+  XSPerfAccumulate("l2prefetchReuseCountStride", PopCount(l2prefetchReuseCountStride))
+  XSPerfAccumulate("l2prefetchReuseCountStream", PopCount(l2prefetchReuseCountStream))
+  XSPerfAccumulate("l2prefetchReuseCountTP", PopCount(l2prefetchReuseCountTP))
+  
   XSPerfAccumulate("l2demandRequest", PopCount(l2demandRequest))
   XSPerfAccumulate("l2prefetchLate", PopCount(l2prefetchLate))
 }

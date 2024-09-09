@@ -346,7 +346,7 @@ class BopReqBufferEntry(implicit p: Parameters) extends BOPBundle {
     req.vaddr.foreach(_ := baseVaddr)
     req.needT := needT
     req.source := source
-    req.pfSource := MemReqSource.Prefetch2L2BOP.id.U
+    req.pfSource := MemReqSource.Prefetch2L2VBOP.id.U
     req
   }
 
@@ -732,8 +732,8 @@ class VBestOffsetPrefetch(implicit p: Parameters) extends BOPModule {
     io.req.bits.vaddr.foreach(_ := 0.U)
     io.req.bits.needT := s1_needT
     io.req.bits.source := s1_source
-    io.req.bits.pfSource := MemReqSource.Prefetch2L2BOP.id.U
-    io.req.bits.isBOP := true.B
+    io.req.bits.pfSource := MemReqSource.Prefetch2L2VBOP.id.U
+    io.req.bits.isVBOP := true.B
   }
 
   for (off <- offsetList) {
